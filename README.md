@@ -7,18 +7,20 @@ Media player software for [DiscoFish art car](http://www.discofish.org/).
 Computer Setup
 --------------
 
-The player runs Ubuntu 14.04. Steps below assume you're on some
-Debian flavour, e.g. Ubuntu. Modify accordingly for other 
-platforms.
+The player runs on Ubuntu 14.04. Steps below assume you're on some
+Debian flavour, e.g. Ubuntu. Modify accordingly for other platforms.
 
-1. Install git:
+1. Install git and depot_tools:
 
         sudo apt-get install git
 
-2. Clone this repo:
+        https://dev.chromium.org/developers/how-tos/install-depot-tools
 
-        git clone https://bitbucket.org/discofish/dfplayer.git dfplayer
+2. Clone dfplayer repo:
+
+        git clone https://gitlab.com/disco_fish/dfplayer dfplayer
         cd dfplayer
+        gclient sync
 
 2.5 Clone dfsparks repo:
 
