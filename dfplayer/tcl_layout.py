@@ -39,10 +39,10 @@ class _StrandBuilder(object):
   def __init__(self, min_x, max_x, min_y, max_y):
     self._min_x = min_x
     self._max_x = max_x
-    self._range_x = max_x - min_x
+    self._range_x = float(max_x - min_x)
     self._min_y = min_y
     self._max_y = max_y
-    self._range_y = max_y - min_y
+    self._range_y = float(max_y - min_y)
     self._enable_horizontal_mirror = False
     self._coords = []
 
@@ -50,7 +50,7 @@ class _StrandBuilder(object):
     self._enable_horizontal_mirror = True
 
   # Note that x/y here are [0, 1] that will be mapped to [min, max] range.
-  def add_custom_coords(self, count, start_x, end_x, start_y, end_y):
+  def add_custom_coords(self, count, start_x, end_x, start_y, end_y, is_abs):
     if self._enable_horizontal_mirror:
       start_x = 1.0 - start_x
       end_x = 1.0 - end_x
@@ -58,21 +58,63 @@ class _StrandBuilder(object):
     end_x = float(end_x)
     start_y = float(start_y)
     end_y = float(end_y)
-    step_x = (end_x - start_x) / count
-    step_y = (end_y - start_y) / count
+    step_x = (end_x - start_x) / (count - 1)
+    step_y = (end_y - start_y) / (count - 1)
     for i in xrange(count):
-      x = (start_x + step_x * i) * self._range_x + self._min_x
-      y = (start_y + step_y * i) * self._range_y + self._min_y
-      if x < self._min_x or x > self._max_x:
-        raise Exception('x out of range: %s (%s / %s)' % (
-            x, self._min_x, self._max_x))
-      if y < self._min_y or y > self._max_y:
-        raise Exception('y out of range: %s (%s / %s)' % (
-            y, self._min_y, self._max_y))
-      self._coords.append((int(x), int(y)))
+      if is_abs:
+        x = (start_x + step_x * i) + self._min_x
+        y = (start_y + step_y * i) + self._min_y
+      else:
+        x = (start_x + step_x * i) * self._range_x + self._min_x
+        y = (start_y + step_y * i) * self._range_y + self._min_y
+      self.add_one_abs(x, y)
 
-  def add_horizontal(self, count, start_x, end_x, y):
-    self.add_custom_coords(count, start_x, end_x, y, y)
+  def add_horizontal_rel(self, count, start_x, end_x, y):
+    self.add_custom_coords(count, start_x, end_x, y, y, False)
+
+  def add_vertical_abs(self, count, x, start_y, end_y):
+    self.add_custom_coords(count, x, x, start_y, end_y, True)
+
+  def add_one_abs(self, x, y):
+    if x < self._min_x or x > self._max_x:
+      raise Exception('x out of range: %s (%s / %s)' % (
+          x, self._min_x, self._max_x))
+    if y < self._min_y or y > self._max_y:
+      raise Exception('y out of range: %s (%s / %s)' % (
+          y, self._min_y, self._max_y))
+    self._coords.append((int(round(x)), int(round(y))))
+
+  def get_coords(self):
+    return list(self._coords)
+
+
+class TclLayout(object):
+
+  def __init__(self, file_path, max_x, max_y):
+    self._strands = {}
+    self._file_path = file_path
+    self._max_x = max_x
+    self._max_y = max_y
+
+    dxf = dxfgrabber.readfile(file_path)
+    self._parse(dxf)
+
+    self._normalize()
+
+    self._customize()
+
+    self._print_info()
+
+  def get_strands(self):
+    return list(self._strands.values())
+
+  def get_strand_coords(self, id):
+    if id >= len(self._strands):
+      return None
+    return self._strands[id].get_coords()
+
+  def get_all_coords(self):
+    result = []
 
   def get_coords(self):
     return list(self._coords)
@@ -116,6 +158,8 @@ class TclLayout(object):
       min_x, max_x, min_y, max_y = self._find_min_max(s._coords)
       print '  Strand P%s, led_count=%s, x=(%s-%s), y=(%s-%s)' % (
           s._id + 1, len(s._coords), min_x, max_x, min_y, max_y)
+      for coord in s._coords:
+        print '    %s %s' % coord
 
   def _parse(self, dxf):
     anchors = {}
@@ -228,12 +272,16 @@ class TclLayout(object):
 
   # The place of terrible hacks, because I have no time to mod the DXF.
   def _customize(self):
-    if self._file_path != 'dfplayer/layout1.dxf':
+    if self._file_path == 'dfplayer/layout1.dxf':
+      self._make_new_flipper(2, 0, 4, False)
+      self._make_new_flipper(1, 3, 5, True)
+      self._make_new_tail(2, 6, False)
+      self._make_new_tail(3, 7, True)
       return
-    self._make_new_flipper(2, 0, 4, False)
-    self._make_new_flipper(1, 3, 5, True)
-    self._make_new_tail(2, 6, False)
-    self._make_new_tail(3, 7, True)
+
+    if self._file_path == 'dfplayer/layout3.dxf':
+      self._make_dorsal_fin()
+      return
 
   def _make_new_tail(self, old_strand_id, new_strand_id, is_driver):
     if new_strand_id in self._strands:
@@ -250,14 +298,14 @@ class TclLayout(object):
       builder.enable_horizontal_mirror()
     y_step = 1.0 / 7.0
     width = 20.0  # In feet.
-    builder.add_horizontal(62, 0, 20.0 / width, 0)
-    builder.add_horizontal(51, 0, 20.0 / width, y_step)
-    builder.add_horizontal(41, 0, 16.0 / width, y_step * 2)
-    builder.add_horizontal(39, 0, 14.0 / width, y_step * 3)
-    builder.add_horizontal(36, 0, 13.0 / width, y_step * 4)
-    builder.add_horizontal(38, 0, 14.0 / width, y_step * 5)
-    builder.add_horizontal(42, 0, 16.0 / width, y_step * 6)
-    builder.add_horizontal(51, 0, 20.0 / width, y_step * 7)
+    builder.add_horizontal_rel(62, 0, 20.0 / width, 0)
+    builder.add_horizontal_rel(51, 0, 20.0 / width, y_step)
+    builder.add_horizontal_rel(41, 0, 16.0 / width, y_step * 2)
+    builder.add_horizontal_rel(39, 0, 14.0 / width, y_step * 3)
+    builder.add_horizontal_rel(36, 0, 13.0 / width, y_step * 4)
+    builder.add_horizontal_rel(38, 0, 14.0 / width, y_step * 5)
+    builder.add_horizontal_rel(42, 0, 16.0 / width, y_step * 6)
+    builder.add_horizontal_rel(51, 0, 20.0 / width, y_step * 7)
     self._strands[new_strand_id] = Strand(new_strand_id)
     self._strands[new_strand_id]._coords = builder.get_coords()
 
@@ -276,27 +324,57 @@ class TclLayout(object):
     y_step = 1.0 / 9.0
     width = 5.0  # In feet.
     if is_driver:
-      builder.add_horizontal(32, 0, 5.0 / width, 0)
-      builder.add_horizontal(25, 0, 5.0 / width, y_step)
-      builder.add_horizontal(25, 0, 5.0 / width, y_step * 2)
-      builder.add_horizontal(17, 0, 3.0 / width, y_step * 3)
-      builder.add_horizontal(18, 0, 3.0 / width, y_step * 4)
-      builder.add_horizontal(18, 0, 3.0 / width, y_step * 5)
-      builder.add_horizontal(18, 0, 3.0 / width, y_step * 6)
-      builder.add_horizontal(18, 0, 3.0 / width, y_step * 7)
-      builder.add_horizontal(15, 0, 3.0 / width, y_step * 8)
-      builder.add_horizontal(14, 0, 3.0 / width, y_step * 9)
+      builder.add_horizontal_rel(32, 0, 5.0 / width, 0)
+      builder.add_horizontal_rel(25, 0, 5.0 / width, y_step)
+      builder.add_horizontal_rel(25, 0, 5.0 / width, y_step * 2)
+      builder.add_horizontal_rel(17, 0, 3.0 / width, y_step * 3)
+      builder.add_horizontal_rel(18, 0, 3.0 / width, y_step * 4)
+      builder.add_horizontal_rel(18, 0, 3.0 / width, y_step * 5)
+      builder.add_horizontal_rel(18, 0, 3.0 / width, y_step * 6)
+      builder.add_horizontal_rel(18, 0, 3.0 / width, y_step * 7)
+      builder.add_horizontal_rel(15, 0, 3.0 / width, y_step * 8)
+      builder.add_horizontal_rel(14, 0, 3.0 / width, y_step * 9)
     else:
       builder.enable_horizontal_mirror()
-      builder.add_horizontal(32, 0, 5.0 / width, 0)
-      builder.add_horizontal(26, 0, 5.0 / width, y_step)
-      builder.add_horizontal(26, 0, 5.0 / width, y_step * 2)
-      builder.add_horizontal(18, 0, 3.0 / width, y_step * 3)
-      builder.add_horizontal(18, 0, 3.0 / width, y_step * 4)
-      builder.add_horizontal(18, 0, 3.0 / width, y_step * 5)
-      builder.add_horizontal(17, 0, 3.0 / width, y_step * 6)
-      builder.add_horizontal(17, 0, 3.0 / width, y_step * 7)
-      builder.add_horizontal(15, 0, 3.0 / width, y_step * 8)
-      builder.add_horizontal(15, 0, 3.0 / width, y_step * 9)
+      builder.add_horizontal_rel(32, 0, 5.0 / width, 0)
+      builder.add_horizontal_rel(26, 0, 5.0 / width, y_step)
+      builder.add_horizontal_rel(26, 0, 5.0 / width, y_step * 2)
+      builder.add_horizontal_rel(18, 0, 3.0 / width, y_step * 3)
+      builder.add_horizontal_rel(18, 0, 3.0 / width, y_step * 4)
+      builder.add_horizontal_rel(18, 0, 3.0 / width, y_step * 5)
+      builder.add_horizontal_rel(17, 0, 3.0 / width, y_step * 6)
+      builder.add_horizontal_rel(17, 0, 3.0 / width, y_step * 7)
+      builder.add_horizontal_rel(15, 0, 3.0 / width, y_step * 8)
+      builder.add_horizontal_rel(15, 0, 3.0 / width, y_step * 9)
     self._strands[new_strand_id] = Strand(new_strand_id)
     self._strands[new_strand_id]._coords = builder.get_coords()
+
+  def _make_dorsal_fin(self):
+    b = _StrandBuilder(0, 64, 0, 249)
+    b.add_vertical_abs(45, 64, 249, 0)
+    b.add_one_abs(61, 249)
+    b.add_vertical_abs(45, 58, 249, 0)
+    b.add_one_abs(56, 249)
+    b.add_vertical_abs(45, 53, 249, 0)
+    b.add_one_abs(50, 249)
+    b.add_vertical_abs(45, 47, 249, 0)
+    b.add_one_abs(45, 249)
+    b.add_vertical_abs(45, 42, 249, 0)
+    b.add_one_abs(39, 249)
+    b.add_vertical_abs(45, 36, 249, 0)
+    b.add_one_abs(33, 249)
+    b.add_vertical_abs(45, 31, 249, 0)
+    b.add_one_abs(28, 249)
+    b.add_vertical_abs(45, 25, 249, 0)
+    b.add_one_abs(22, 249)
+    b.add_vertical_abs(35, 19, 249, 57)
+    b.add_one_abs(17, 249)
+    b.add_vertical_abs(35, 14, 249, 57)
+    b.add_one_abs(11, 249)
+    b.add_vertical_abs(35, 8, 249, 57)
+    b.add_one_abs(6, 249)
+    b.add_vertical_abs(35, 3, 249, 57)
+    b.add_one_abs(0, 249)
+    self._strands[0] = Strand(0)
+    self._strands[0]._coords = b.get_coords()
+
