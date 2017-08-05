@@ -22,10 +22,16 @@ void Sleep(double seconds) {
     time.tv_sec += 1;
     time.tv_nsec -= 1000000000;
   }
-  int err = clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &time, nullptr);
-  if (err != 0) {
-    fprintf(stderr, "clock_nanosleep %d\n", err);
-    CHECK(false);
+  while (true) {
+    int err = clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &time, nullptr);
+    if (err == EINTR)
+      continue;
+    if (err != 0) {
+      fprintf(stderr, "clock_nanosleep %d: %f %d %d\n", err, (float) seconds,
+              (int) time.tv_sec, (int) time.tv_nsec);
+      CHECK(false);
+    }
+    break;
   }
 }
 
@@ -38,10 +44,15 @@ void SleepUs(int delay_us) {
     time.tv_sec += 1;
     time.tv_nsec -= 1000000000;
   }
-  int err = clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &time, nullptr);
-  if (err != 0) {
-    fprintf(stderr, "clock_nanosleep %d\n", err);
-    CHECK(false);
+  while (true) {
+    int err = clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &time, nullptr);
+    if (err == EINTR)
+      continue;
+    if (err != 0) {
+      fprintf(stderr, "clock_nanosleep %d\n", err);
+      CHECK(false);
+    }
+    break;
   }
 }
 

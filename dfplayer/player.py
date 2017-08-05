@@ -18,7 +18,11 @@ import time
 from PIL import Image
 from PIL import ImageChops
 from gevent import sleep
-from gevent.coros import RLock
+
+try:
+  from gevent.coros import RLock
+except:
+  from gevent.lock import RLock
 
 from .effect import load as load_effect
 from .stats import Stats
