@@ -603,7 +603,7 @@ class Player(object):
             # TODO(igorc): Get original image from renderer.
             newimg_data = self._visualizer.GetAndClearLastImageForTest()
             if newimg_data and len(newimg_data) > 0:
-                orig_image = Image.fromstring('RGBA', (512, 512), newimg_data)
+                orig_image = Image.frombytes('RGBA', (512, 512), newimg_data)
         if need_intermediate:
             last_image = self._tcl.get_and_clear_last_image(TCL_MAIN)
         else:
@@ -636,7 +636,7 @@ class Player(object):
             self._tcl.enable_rainbow(TCL_MAIN, int(abs_coord))
         else:
             self._tcl.enable_rainbow(TCL_MAIN, -1)
-        return Image.fromstring(
+        return Image.frombytes(
             'RGB', (self._kinect.GetWidth(), self._kinect.GetHeight()),
             img_data)
 

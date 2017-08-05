@@ -65,7 +65,7 @@ class TclRenderer(object):
     img_data = self._renderer.GetAndClearLastImage(controller)
     if not img_data or len(img_data) == 0:
       return None
-    return Image.fromstring(
+    return Image.frombytes(
         'RGBA', (self._widths[controller], self._heights[controller]),
         img_data)
 
@@ -73,7 +73,7 @@ class TclRenderer(object):
     img_data = self._renderer.GetAndClearLastLedImage(controller)
     if not img_data or len(img_data) == 0:
       return None
-    return Image.fromstring(
+    return Image.frombytes(
         'RGBA', (self._widths[controller], self._heights[controller]),
         img_data)
 
