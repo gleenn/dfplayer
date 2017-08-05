@@ -2,7 +2,7 @@ solutions = [
   {
     "managed"   : False,
     "name"      : "deps",
-    "url"       : "https://gitlab.com/disco_fish/dfplayer_deps",
+    "url"       : "https://gitlab.com/discofish/dfplayer-deps",
     "deps_file" : ".DEPS.git",
   },
 ]
