@@ -87,6 +87,9 @@ class _StrandBuilder(object):
   def get_coords(self):
     return list(self._coords)
 
+  def clear(self):
+    self._coords = []
+
 
 class TclLayout(object):
 
@@ -158,8 +161,8 @@ class TclLayout(object):
       min_x, max_x, min_y, max_y = self._find_min_max(s._coords)
       print '  Strand P%s, led_count=%s, x=(%s-%s), y=(%s-%s)' % (
           s._id + 1, len(s._coords), min_x, max_x, min_y, max_y)
-      for coord in s._coords:
-        print '    %s %s' % coord
+      #for coord in s._coords:
+      #  print '    %s %s' % coord
 
   def _parse(self, dxf):
     anchors = {}
@@ -280,7 +283,8 @@ class TclLayout(object):
       return
 
     if self._file_path == 'dfplayer/layout3.dxf':
-      self._make_dorsal_fin()
+      #self._make_dorsal_fin()
+      self._make_dorsal_fin_reverse()
       return
 
   def _make_new_tail(self, old_strand_id, new_strand_id, is_driver):
@@ -306,8 +310,7 @@ class TclLayout(object):
     builder.add_horizontal_rel(38, 0, 14.0 / width, y_step * 5)
     builder.add_horizontal_rel(42, 0, 16.0 / width, y_step * 6)
     builder.add_horizontal_rel(51, 0, 20.0 / width, y_step * 7)
-    self._strands[new_strand_id] = Strand(new_strand_id)
-    self._strands[new_strand_id]._coords = builder.get_coords()
+    self._add_strand_builder(new_strand_id, builder)
 
   def _make_new_flipper(self, strand1, strand2, new_strand_id, is_driver):
     if new_strand_id in self._strands:
@@ -346,8 +349,12 @@ class TclLayout(object):
       builder.add_horizontal_rel(17, 0, 3.0 / width, y_step * 7)
       builder.add_horizontal_rel(15, 0, 3.0 / width, y_step * 8)
       builder.add_horizontal_rel(15, 0, 3.0 / width, y_step * 9)
-    self._strands[new_strand_id] = Strand(new_strand_id)
-    self._strands[new_strand_id]._coords = builder.get_coords()
+    self._add_strand_builder(new_strand_id, builder)
+
+  def _add_strand_builder(self, strand_id, builder):
+    self._strands[strand_id] = Strand(strand_id)
+    self._strands[strand_id]._coords = builder.get_coords()
+    builder.clear()
 
   def _make_dorsal_fin(self):
     b = _StrandBuilder(0, 64, 0, 249)
@@ -375,6 +382,33 @@ class TclLayout(object):
     b.add_one_abs(6, 249)
     b.add_vertical_abs(35, 3, 249, 57)
     b.add_one_abs(0, 249)
-    self._strands[0] = Strand(0)
-    self._strands[0]._coords = b.get_coords()
+    self._add_strand_builder(0, b)
+
+  def _make_dorsal_fin_reverse(self):
+    b = _StrandBuilder(0, 65, 0, 249)
+    b.add_vertical_abs(45, 3, 249, 0)
+    b.add_one_abs(4, 249)
+    b.add_vertical_abs(45, 8, 249, 0)
+    b.add_one_abs(9, 249)
+    b.add_vertical_abs(45, 14, 249, 0)
+    b.add_one_abs(15, 249)
+    b.add_vertical_abs(45, 19, 249, 0)
+    b.add_one_abs(20, 249)
+    b.add_vertical_abs(45, 25, 249, 0)
+    b.add_one_abs(26, 249)
+    b.add_vertical_abs(45, 31, 249, 0)
+    b.add_one_abs(32, 249)
+    b.add_vertical_abs(45, 36, 249, 0)
+    b.add_one_abs(37, 249)
+    b.add_vertical_abs(45, 42, 249, 0)
+    b.add_one_abs(43, 249)
+    b.add_vertical_abs(35, 47, 249, 57)
+    b.add_one_abs(48, 249)
+    b.add_vertical_abs(35, 53, 249, 57)
+    b.add_one_abs(54, 249)
+    b.add_vertical_abs(35, 58, 249, 57)
+    b.add_one_abs(59, 249)
+    b.add_vertical_abs(35, 64, 249, 57)
+    b.add_one_abs(65, 249)
+    self._add_strand_builder(0, b)
 
