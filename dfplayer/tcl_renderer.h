@@ -94,6 +94,8 @@ class TclRenderer {
   // to automatic selection between wearable and visualization.
   void SetWearableEffect(int id);
 
+  void SetTextMode(bool is_text);
+
   // Forces the given rendering state for the next period.
   void SetRenderingState(RenderingState state);
   void ToggleRenderingState();
@@ -158,6 +160,7 @@ class TclRenderer {
   RenderingState rendering_state_;
   uint64_t next_rendering_state_change_time_;
   uint64_t next_wearable_change_time_ = -1;
+  bool is_text_mode_ = false;
 
   static TclRenderer* instance_;
 };

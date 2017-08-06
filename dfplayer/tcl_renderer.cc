@@ -34,8 +34,8 @@ const int kPassthroughEffectPriority = 20;
 const int kRainbowEffectPriority = 10;
 
 const uint64_t kWearableStateDurationMs = 300 * 1000;
-const uint64_t kVisualizationStateDurationMs = 300 * 1000;
-const uint64_t kWearableChangeDurationMs = 20 * 1000;
+const uint64_t kVisualizationStateDurationMs = 5 * 1000;
+const uint64_t kWearableChangeDurationMs = 9 * 1000;
 
 const int kWearableEffectIdsCount = 8;
 const int kWearableEffectIds[kWearableEffectIdsCount] =
@@ -145,6 +145,10 @@ void TclRenderer::ScheduleImageAt(
     return;
   }
 
+  if (is_text_mode_ && controller_id == 3) {
+    return;
+  }
+
   int controller_w = -1;
   int controller_h = -1;
   if (!tcl_manager_->GetControllerImageSize(
@@ -208,9 +212,15 @@ std::unique_ptr<RgbaImage> TclRenderer::BuildImageLocked(
     PasteSubImage(
         img1, dst_w / 2, dst_h,
         dst->data(), 0, 0, dst_w, dst_h, false, true);
-    PasteSubImage(
-        img1, dst_w / 2, dst_h,
-        dst->data(), dst_w / 2, 0, dst_w, dst_h, false, true);
+    if (is_text_mode_) {
+      PasteSubImage(
+          img1, dst_w / 2, dst_h,
+          dst->data(), dst_w / 2 + 45, 0, dst_w, dst_h, false, true);
+    } else {
+      PasteSubImage(
+          img1, dst_w / 2, dst_h,
+          dst->data(), dst_w / 2, 0, dst_w, dst_h, false, true);
+    }
     delete[] img1;
   } else {  // EFFECT_MIRROR
     uint8_t* img1 = ResizeImage(
@@ -268,12 +278,17 @@ void TclRenderer::SetWearableEffect(int id) {
   next_wearable_change_time_ = GetCurrentMillis() + kWearableChangeDurationMs;
 }
 
+void TclRenderer::SetTextMode(bool is_text) {
+  is_text_mode_ = is_text;
+}
+
 int TclRenderer::GetCurrentWearableEffect() {
   return selected_wearable_effect_id_;
 }
 
 void TclRenderer::SetRenderingState(RenderingState state) {
   rendering_state_ = state;
+  //rendering_state_ = STATE_WEARABLE;
 
   uint64_t now = GetCurrentMillis();
   if (rendering_state_ == STATE_WEARABLE) {

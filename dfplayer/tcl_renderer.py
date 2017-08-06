@@ -89,6 +89,9 @@ class TclRenderer(object):
   def set_wearable_effect(self, id):
     self._renderer.SetWearableEffect(id)
 
+  def set_text_mode(self, is_text):
+    self._renderer.SetTextMode(is_text)
+
   def toggle_rendering_state(self):
     self._renderer.ToggleRenderingState()
 
@@ -101,7 +104,7 @@ class TclRenderer(object):
   def set_effect_image(self, controller, image, mirror):
     if image:
       self._renderer.SetEffectImage(
-          controller, image.tostring(),
+          controller, image.tobytes(),
           image.size[0], image.size[1], 2 if mirror else 1)
     else:
       self._renderer.SetEffectImage(controller, '', 0, 0, 2)
@@ -116,7 +119,7 @@ class TclRenderer(object):
 
   def get_frame_data_for_test(self, controller, image):
     return self._renderer.GetFrameDataForTest(
-        controller, image.tostring())
+        controller, image.tobytes())
 
   def get_and_clear_frame_delays(self):
     self._populate_frame_delays()

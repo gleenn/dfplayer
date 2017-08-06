@@ -134,6 +134,7 @@ class PlayerApp(Frame):
         self.root.bind('%', lambda e: player.play_effect('chameleon'))
         self.root.bind('^', lambda e: player.play_effect('indicator'))
         self.root.bind('&', lambda e: player.play_effect('flick'))
+        self.root.bind('*', lambda e: player.play_effect('textstay'))
         self.root.bind('<space>', lambda e: player.toggle())
         self.root.bind('<Up>', lambda e: player.prev())
         self.root.bind('<Down>', lambda e: player.next())
