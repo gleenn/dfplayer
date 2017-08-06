@@ -22,6 +22,11 @@ Debian flavour, e.g. Ubuntu. Modify accordingly for other platforms.
         cd dfplayer
         gclient sync
 
+        Since the repos are currently non-public, update ~/.netrc:
+          machine gitlab.com
+          login your_login@gmail.com
+          password your_password
+
 2.5 Clone dfsparks repo:
 
         git clone https://bitbucket.org/discofish/dfsparks.git dfsparks
